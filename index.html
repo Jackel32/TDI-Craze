@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBERDEFENSE // IDLE Tower Defense</title>
+  <!-- Modern Futuristic Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Dashboard Header -->
+    <header class="game-header">
+      <div class="logo-area">
+        <h1>CYBERDEFENSE<span class="logo-accent">//IDLE</span></h1>
+        <div class="network-status"><span class="pulse-dot"></span> ONLINE_SYS_OK</div>
+      </div>
+      
+      <div class="stats-bar">
+        <div class="stat-box coins-glow" id="coins-container">
+          <span class="stat-label">CREDITS</span>
+          <span class="stat-value" id="coins-val">0</span>
+          <span class="currency-symbol">₡</span>
+        </div>
+        <div class="stat-box crystals-glow" id="crystals-container" style="border-color: rgba(224, 0, 255, 0.3); box-shadow: 0 0 10px rgba(224, 0, 255, 0.05); min-width: 110px;">
+          <span class="stat-label" style="color: var(--accent);">CRYSTALS</span>
+          <span class="stat-value" id="crystals-val" style="color: var(--accent); text-shadow: 0 0 8px rgba(224, 0, 255, 0.3);">0</span>
+          <span class="currency-symbol" style="color: rgba(224, 0, 255, 0.15); font-size: 1.15rem; right: 8px; bottom: 3px;">💠</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">CURRENT MAP</span>
+          <span class="stat-value" id="map-name-val">Sector 01</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">WAVE</span>
+          <span class="stat-value" id="wave-val">1/20</span>
+        </div>
+        <div class="stat-box health-glow" style="min-width: 175px;">
+          <span class="stat-label">CORE INTEGRITY</span>
+          <div class="health-bar-container" style="height: auto; display: flex; flex-direction: column; gap: 3px; padding: 3px 4px; background: var(--bg-input); border: 1px solid hsl(240, 10%, 20%); border-radius: 2px;">
+            <!-- Thin Shield bar overlay (hidden by default) -->
+            <div id="shield-container-hud" style="height: 4px; background: rgba(0, 191, 255, 0.1); border-radius: 1px; overflow: hidden; display: none;">
+              <div class="shield-bar-fill" id="core-shield-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00bfff, #00f6ff); box-shadow: 0 0 6px #00bfff; transition: width 0.3s cubic-bezier(0.1, 0.8, 0.3, 1);"></div>
+            </div>
+            <div style="height: 14px; position: relative; width: 100%;">
+              <div class="health-bar-fill" id="core-health-fill" style="width: 100%; height: 100%;"></div>
+              <span class="health-text" id="core-health-val" style="font-size: 0.6rem; font-weight: bold; line-height: 14px;">100/100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Game & Interface Area -->
+    <main class="game-main">
+      <!-- Game Canvas Column -->
+      <section class="viewport-section">
+        <div class="canvas-wrapper">
+          <!-- CRT Scanlines texture overlay over radar grid -->
+          <div class="scanlines"></div>
+          <canvas id="game-canvas" width="800" height="500"></canvas>
+          <div id="placement-overlay" class="hidden-overlay">
+            <span class="overlay-text">Select a grid tile to place your tower</span>
+            <button id="cancel-placement-btn" class="cyber-btn mini">Cancel</button>
+          </div>
+          <div id="game-over-banner" class="banner-overlay hidden-overlay">
+            <div class="banner-content">
+              <h2 class="alert-title">CORE INTEGRITY COMPROMISED</h2>
+              <p>Rebooting defense grid... Placed towers maintained.</p>
+              <div class="earned-stats">Credits Earned This Run: <span id="run-earnings">0</span>₡</div>
+              <button id="dismiss-defeat-btn" class="cyber-btn pulse">Reboot Wave 1</button>
+            </div>
+          </div>
+          <div id="victory-banner" class="banner-overlay hidden-overlay">
+            <div class="banner-content">
+              <h2 class="victory-title">SECTOR SECURED</h2>
+              <p>All threats eliminated. 100% credit refund granted on next map.</p>
+              <div class="victory-bonus">Completion Bonus: <span id="victory-bonus-val">0</span>₡</div>
+              <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button id="victory-next-btn" class="cyber-btn success pulse" style="flex: 1; font-size: 0.72rem; padding: 10px 4px;">CLAIM VICTORY</button>
+                <button id="victory-endless-btn" class="cyber-btn mini" style="flex: 1; font-size: 0.72rem; padding: 10px 4px; border-color: var(--accent); color: var(--accent);">ENTER ENDLESS</button>
+              </div>
+            </div>
+          </div>
+          <!-- Offline Earnings Modal -->
+          <div id="offline-banner" class="banner-overlay hidden-overlay">
+            <div class="banner-content">
+              <h2 class="victory-title">GRID RESTORED</h2>
+              <p>Operational logs recovered. The defense grid operated passively while you were disconnected.</p>
+              <div class="stats-list" style="margin-bottom: 24px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid hsl(240, 10%, 15%); padding: 6px 0;">
+                  <span style="color: var(--text-muted); font-size: 0.8rem;">TIME DISCONNECTED:</span>
+                  <strong id="offline-time-val" style="color: var(--text-primary); font-size: 0.8rem;">0h 0m</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid hsl(240, 10%, 15%); padding: 6px 0;">
+                  <span style="color: var(--text-muted); font-size: 0.8rem;">CREDITS ACCUMULATED:</span>
+                  <strong id="offline-credits-val" style="color: var(--yellow); font-size: 0.8rem;">0 ₡</strong>
+                </div>
+              </div>
+              <button id="claim-offline-btn" class="cyber-btn success pulse">INTEGRATE CREDITS</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Tactical Core Powers -->
+        <div class="skills-panel">
+          <span class="skills-label">OPERATOR GRID POWERS:</span>
+          <div class="skills-btn-row">
+            <button id="skill-lightning-btn" class="cyber-btn skill-btn-action" title="Deals high area impact shock damage to selected grid cells">
+              ⚡ SKY LIGHTNING <span class="cooldown-tag" id="lightning-cd-tag">READY</span>
+            </button>
+            <button id="skill-shield-btn" class="cyber-btn skill-btn-action" title="Restores +30 core structural integrity immediately">
+              🛡️ CORE OVERCLOCK <span class="cooldown-tag" id="shield-cd-tag">READY</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Combat & Speed Controls -->
+        <div class="controls-panel">
+          <div class="control-group">
+            <button id="play-pause-btn" class="cyber-btn active" title="Start Wave">
+              <span class="icon">▶</span> <span class="label">START WAVE</span>
+            </button>
+            <button id="auto-restart-btn" class="cyber-btn toggle-btn checked" title="Automatically reboot grid on defeat">
+              <span class="toggle-indicator"></span> AUTO-REBOOT
+            </button>
+            <button id="auto-wave-btn" class="cyber-btn toggle-btn checked" title="Automatically start the next wave">
+              <span class="toggle-indicator"></span> AUTO-WAVE
+            </button>
+          </div>
+
+          <div class="control-group">
+            <span class="speed-label">SPEED:</span>
+            <div class="speed-selectors">
+              <button class="speed-btn active" data-speed="1">1x</button>
+              <button class="speed-btn" data-speed="2">2x</button>
+              <button class="speed-btn" data-speed="4">4x</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <button id="mute-btn" class="cyber-btn circle-btn" title="Toggle Sound FX">
+              <span id="mute-icon">🔊</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sidebar Operations Dashboard -->
+      <aside class="dashboard-sidebar">
+        <!-- Navigation Tabs -->
+        <nav class="sidebar-tabs">
+          <button class="tab-btn active" data-tab="build">BUILD</button>
+          <button class="tab-btn" data-tab="upgrades">UPGRADES</button>
+          <button class="tab-btn" data-tab="sectors">SECTORS</button>
+          <button class="tab-btn" data-tab="modules">MODULES</button>
+          <button class="tab-btn" data-tab="dossier">DOSSIER</button>
+          <button class="tab-btn" data-tab="system">SYSTEM</button>
+        </nav>
+
+        <!-- Tab Contents -->
+        <div class="tab-viewport">
+          <!-- Build Towers Tab -->
+          <div class="tab-content active" id="tab-build">
+            <div class="sidebar-header">
+              <h3>DEFENSE MODULES</h3>
+              <p>Construct network relays to neutralize incoming grid corruption.</p>
+            </div>
+            
+            <div class="tower-shop-list">
+              <!-- Pulse Tower -->
+              <div class="shop-card" data-tower="pulse">
+                <div class="card-glow"></div>
+                <div class="card-icon pulse-icon"></div>
+                <div class="card-details">
+                  <div class="card-title-row">
+                    <h4>PULSE LASER</h4>
+                    <span class="tower-price" id="price-pulse">50 ₡</span>
+                  </div>
+                  <p class="card-desc">Rapid single-target energy pulse. Reliable basic defense.</p>
+                  <div class="card-stats">
+                    <span>DPS: <strong id="dps-pulse">15</strong></span>
+                    <span>Range: <strong id="range-pulse">120m</strong></span>
+                    <span>Type: <strong style="color: #00ffff; text-shadow: 0 0 2px rgba(0, 255, 255, 0.5); font-size: 0.58rem;">ALL-ROUND</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Plasma Cannon -->
+              <div class="shop-card" data-tower="plasma">
+                <div class="card-glow"></div>
+                <div class="card-icon plasma-icon"></div>
+                <div class="card-details">
+                  <div class="card-title-row">
+                    <h4>PLASMA CANNON</h4>
+                    <span class="tower-price" id="price-plasma">150 ₡</span>
+                  </div>
+                  <p class="card-desc">Heavy orbital payload. High damage with kinetic splash radius.</p>
+                  <div class="card-stats">
+                    <span>DPS: <strong id="dps-plasma">28</strong></span>
+                    <span>Range: <strong id="range-plasma">95m</strong></span>
+                    <span>Type: <strong style="color: #ff007f; text-shadow: 0 0 2px rgba(255, 0, 127, 0.5); font-size: 0.58rem;">GROUND</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stasis Beam -->
+              <div class="shop-card" data-tower="stasis">
+                <div class="card-glow"></div>
+                <div class="card-icon stasis-icon"></div>
+                <div class="card-details">
+                  <div class="card-title-row">
+                    <h4>STASIS RELAY</h4>
+                    <span class="tower-price" id="price-stasis">100 ₡</span>
+                  </div>
+                  <p class="card-desc">Draws continuous coolant beam that slowers target speeds.</p>
+                  <div class="card-stats">
+                    <span>Slow: <strong id="dps-stasis">30%</strong></span>
+                    <span>Range: <strong id="range-stasis">110m</strong></span>
+                    <span>Type: <strong style="color: #39ff14; text-shadow: 0 0 2px rgba(57, 255, 20, 0.5); font-size: 0.58rem;">GROUND</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tesla Coil -->
+              <div class="shop-card" data-tower="tesla">
+                <div class="card-glow"></div>
+                <div class="card-icon tesla-icon"></div>
+                <div class="card-details">
+                  <div class="card-title-row">
+                    <h4>TESLA MATRIX</h4>
+                    <span class="tower-price" id="price-tesla">350 ₡</span>
+                  </div>
+                  <p class="card-desc">High voltage matrix chaining electrical arcs to multiple targets.</p>
+                  <div class="card-stats">
+                    <span>DPS: <strong id="dps-tesla">45</strong></span>
+                    <span>Chain: <strong id="range-tesla">3 max</strong></span>
+                    <span>Type: <strong style="color: #ffff00; text-shadow: 0 0 2px rgba(255, 255, 0, 0.5); font-size: 0.58rem;">AIR ONLY</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            
+            <!-- Live Combat Analytics (Visible under shop cards) -->
+            <div id="analytics-console-box" class="sys-card" style="margin-top: 15px; border-color: rgba(0, 255, 255, 0.15);">
+              <h4 style="font-size: 0.72rem; letter-spacing: 0.5px; border-bottom: 1px solid hsl(240, 10%, 18%); padding-bottom: 6px; margin-bottom: 8px;">LIVE GRID PERFORMANCE (DPS METERS)</h4>
+              <div class="analytics-stacked-bar" style="height: 10px; background: #06050b; border-radius: 5px; overflow: hidden; display: flex; margin-bottom: 8px; border: 1px solid hsl(240, 10%, 20%);">
+                <div id="meter-pulse" style="width: 25%; background: #00ffff; box-shadow: 0 0 6px #00ffff; transition: width 0.3s ease;"></div>
+                <div id="meter-plasma" style="width: 25%; background: #ff007f; box-shadow: 0 0 6px #ff007f; transition: width 0.3s ease;"></div>
+                <div id="meter-stasis" style="width: 25%; background: #39ff14; box-shadow: 0 0 6px #39ff14; transition: width 0.3s ease;"></div>
+                <div id="meter-tesla" style="width: 25%; background: #ffff00; box-shadow: 0 0 6px #ffff00; transition: width 0.3s ease;"></div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); font-size: 0.62rem; font-family: 'Orbitron'; text-align: center; gap: 4px; font-weight: bold;">
+                <span style="color: #00ffff;">PLS: <span id="val-pulse">25%</span></span>
+                <span style="color: #ff007f;">PLM: <span id="val-plasma">25%</span></span>
+                <span style="color: #39ff14;">STS: <span id="val-stasis">25%</span></span>
+                <span style="color: #ffff00;">TSL: <span id="val-tesla">25%</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Permanent Upgrades Tab -->
+          <div class="tab-content" id="tab-upgrades">
+            <div class="sidebar-header">
+              <h3>PERMANENT TECH PROTOCOLS</h3>
+              <p>Enhance core tower modules permanently using earned Cyber-Credits.</p>
+            </div>
+            
+            <div class="upgrades-section-header" style="margin-top: 5px;">TOWER WEAPONS</div>
+            <div class="upgrades-selector" style="flex-wrap: wrap; gap: 4px; margin-bottom: 12px;">
+              <button class="sub-tab-btn active" data-upgrade-type="pulse">PULSE</button>
+              <button class="sub-tab-btn" data-upgrade-type="plasma">PLASMA</button>
+              <button class="sub-tab-btn" data-upgrade-type="stasis">STASIS</button>
+              <button class="sub-tab-btn" data-upgrade-type="tesla">TESLA</button>
+            </div>
+
+            <div class="upgrades-section-header">GLOBAL SYSTEM PROTOCOLS</div>
+            <div class="upgrades-selector" style="flex-wrap: wrap; gap: 4px; margin-bottom: 16px;">
+              <button class="sub-tab-btn" data-upgrade-type="attack" style="color: #ff3333; text-shadow: 0 0 4px rgba(255, 51, 51, 0.45);">ATTACK</button>
+              <button class="sub-tab-btn" data-upgrade-type="defense" style="color: #00bfff; text-shadow: 0 0 4px rgba(0, 191, 255, 0.45);">DEFENSE</button>
+              <button class="sub-tab-btn" data-upgrade-type="utility" style="color: #00ffaa; text-shadow: 0 0 4px rgba(0, 255, 170, 0.45);">UTILITY</button>
+              <button class="sub-tab-btn" data-upgrade-type="quantum" style="color: var(--accent); text-shadow: 0 0 6px hsla(320, 100%, 50%, 0.45);">QUANTUM</button>
+            </div>
+
+            <div class="upgrades-scroll-area">
+              <!-- Upgrades list dynamically generated by JS -->
+              <div id="upgrades-container"></div>
+            </div>
+          </div>
+
+          <!-- Sector/Maps Selection Tab -->
+          <div class="tab-content" id="tab-sectors">
+            <div class="sidebar-header">
+              <h3>GRID SECTORS</h3>
+              <p>Deploy to more corrupt grid zones. Harder grids supply credit multipliers.</p>
+            </div>
+            
+            <div class="maps-list" id="sectors-container">
+              <!-- Sector cards loaded dynamically by JS -->
+            </div>
+          </div>
+
+          <!-- Modules Deck Tab -->
+          <div class="tab-content" id="tab-modules">
+            <div class="sidebar-header">
+              <h3>OPERATOR DECK MODULES</h3>
+              <p>Equip tactical sub-neural modules to manipulate active simulation mechanics.</p>
+            </div>
+            <div class="deck-slots-area">
+              <h5 style="font-family: var(--font-display); font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 0.5px; border-bottom: 1px solid hsl(240, 10%, 15%); padding-bottom: 6px;">ACTIVE DECK SLOTS</h5>
+              <div class="equipped-slots-grid" id="modules-deck-slots">
+                <!-- Equipped cards loaded here -->
+              </div>
+            </div>
+            <div class="modules-inventory-area" style="margin-top: 15px;">
+              <h5 style="font-family: var(--font-display); font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 0.5px; border-bottom: 1px solid hsl(240, 10%, 15%); padding-bottom: 6px;">AVAILABLE MODULE ARCHIVE</h5>
+              <div class="modules-inventory-list" id="modules-inventory-container">
+                <!-- Available cards loaded here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Threat Dossier Tab -->
+          <div class="tab-content" id="tab-dossier">
+            <div class="sidebar-header">
+              <h3>THREAT DOSSIER</h3>
+              <p>Decrypted sub-neural database tracking corrupt vector threat variants.</p>
+            </div>
+            <div class="dossier-scroll-area" id="dossier-container">
+              <!-- Dynamic Threat Cards Rendered Here -->
+            </div>
+          </div>
+
+          <!-- System Settings/Options Tab -->
+          <div class="tab-content" id="tab-system">
+            <div class="sidebar-header">
+              <h3>GRID ENGINE SYSTEMS</h3>
+              <p>Manage localized simulation configurations, save data, and statistics.</p>
+            </div>
+            
+            <div class="system-menu">
+              <div class="sys-card">
+                <h4>STATISTICS SUMMARY</h4>
+                <ul class="stats-list">
+                  <li>Total Kills: <strong id="stat-total-kills">0</strong></li>
+                  <li>Total Credits Earned: <strong id="stat-total-coins">0</strong>₡</li>
+                  <li>Sectors Cleared: <strong id="stat-maps-cleared">0</strong></li>
+                  <li>Towers Placed: <strong id="stat-total-placed">0</strong></li>
+                  <li>Runs Played: <strong id="stat-total-runs">0</strong></li>
+                </ul>
+              </div>
+
+              <div class="sys-card" id="prestige-card">
+                <h4>QUANTUM OVERLOAD PRESTIGE</h4>
+                <p class="card-caption">Infuse the core grid with subatomic dark energy. This resets your active map clears and credits in exchange for permanent <strong>Quantum Crystals</strong>.</p>
+                <ul class="stats-list" style="margin-bottom: 12px; font-size: 0.75rem;">
+                  <li>Quantum Crystals: <strong id="prestige-crystals-val">0</strong></li>
+                  <li>Permanent Multiplier: <strong id="prestige-mult-val" style="color: var(--primary);">+0% Credits</strong></li>
+                  <li>Pending Crystals on Reboot: <strong id="prestige-award-val" style="color: var(--yellow);">0</strong></li>
+                </ul>
+                <button id="prestige-btn" class="cyber-btn success mini" style="width: 100%;">INITIATE QUANTUM INJECTION</button>
+              </div>
+
+              <div class="sys-card">
+                <h4>DATA ADMINISTRATION</h4>
+                <p class="card-caption">All core configurations are automatically stored on your browser's partition.</p>
+                <div class="sys-btn-row">
+                  <button id="save-btn" class="cyber-btn mini">MANUAL WRITE</button>
+                  <button id="reset-btn" class="cyber-btn danger mini">FACTORY WIPEOUT</button>
+                </div>
+              </div>
+
+              <div class="sys-card">
+                <h4>CORE AUDIO FREQUENCY MONITOR</h4>
+                <p class="card-caption">Live oscilloscope tracing electrical frequencies generated by active synthesis pipelines.</p>
+                <div class="oscilloscope-wrapper" style="background: #06050b; border: 1px solid hsl(240, 10%, 15%); border-radius: 4px; padding: 6px; position: relative; margin-top: 10px;">
+                  <canvas id="synth-visualizer" width="220" height="70" style="display: block; width: 100%; height: 70px; filter: drop-shadow(0 0 4px var(--primary));"></canvas>
+                  <div style="position: absolute; top: 4px; left: 6px; font-size: 0.55rem; color: var(--text-muted); font-family: 'Orbitron'; pointer-events: none;">LIVE WAVEFORM MONITOR</div>
+                </div>
+              </div>
+
+              <div class="sys-card">
+                <h4>ABOUT</h4>
+                <p class="card-caption">CyberDefense // Idle is designed for extreme cross-platform optimization, rendering high-frame simulations procedurally on HTML5 Canvas. Built for Desktop and Android wrappers.</p>
+                <p class="engine-ver">Engine version v1.2.0-stable</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Context Inspector Panel (When a tower is selected on canvas) -->
+        <div id="inspector-panel" class="inspector-card hidden-panel">
+          <div class="inspector-header">
+            <h4 id="inspect-title">PULSE LASER</h4>
+            <button id="inspect-close-btn" class="close-btn">&times;</button>
+          </div>
+          <div class="inspector-body">
+            <div class="inspect-stats-grid">
+              <div class="inspect-stat"><span>Level:</span> <strong id="inspect-level">1</strong></div>
+              <div class="inspect-stat"><span>Targets:</span> <strong id="inspect-targets" style="font-size: 0.58rem; letter-spacing: 0.2px;">ALL-ROUND</strong></div>
+              <div class="inspect-stat"><span>Damage:</span> <strong id="inspect-damage">10</strong></div>
+              <div class="inspect-stat"><span>Fire Rate:</span> <strong id="inspect-rate">1.5/s</strong></div>
+              <div class="inspect-stat"><span>Range:</span> <strong id="inspect-range">120m</strong></div>
+              <div class="inspect-stat wide"><span>Total Damage Dealt:</span> <strong id="inspect-total-dmg">12,500</strong></div>
+            </div>
+            <div class="inspect-targeting-row">
+              <span class="targeting-label">TARGET PRIORITY</span>
+              <div class="targeting-selectors">
+                <button class="target-priority-btn active" data-priority="first">FIRST</button>
+                <button class="target-priority-btn" data-priority="last">LAST</button>
+                <button class="target-priority-btn" data-priority="strongest">STRONG</button>
+                <button class="target-priority-btn" data-priority="weakest">WEAK</button>
+              </div>
+            </div>
+            <div class="inspect-actions">
+              <button id="inspect-upgrade-btn" class="cyber-btn success mini">UPGRADE (<span id="inspect-upgrade-cost">30</span>₡)</button>
+              <button id="inspect-sell-btn" class="cyber-btn danger mini">DISMANTLE (<span id="inspect-refund">40</span>₡)</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Game Code Initialization -->
+  <script src="game.js"></script>
+</body>
+</html>
